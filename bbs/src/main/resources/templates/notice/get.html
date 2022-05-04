@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="fragments/head :: 헤드"></head>
+  <body class="g-sidenav-show bg-gray-200">
+    <aside th:replace="fragments/aside :: 어사이드"></aside>
+    <main class="main-content mt-0">
+      <section>
+        <div class="page-header min-vh-100">
+          <div class="container">
+            <!-- 게시글 조회 내용  -->
+            <div class="row">
+              <div class="col-md-10 ms-auto me-auto">
+                <div class="card card-plain">
+                  <div class="card-body bg-white">
+                    <table class="table table-condensed">
+                      <tr>
+                        <th>제목</th>
+                        <td th:text="${noticeboard.title}"></td>
+                        <th>글쓴이</th>
+                        <td th:text="${noticeboard.writer}"></td>
+                        <th>조회수</th>
+                        <td th:text="${noticeboard.hit}"></td>
+                      </tr>
+                      <tr>
+                        <th>내용</th>
+                        <td colspan="3" th:text="${noticeboard.content}"></td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div class="card-footer bg-white text-center pt-0 px-lg-2 px-1">
+                    <a th:href="@{/noticeboard/list} + '?pageNum=__${cri.pageNum}__'" class="btn btn-success page">목록</a>
+                    <!-- pageNum을 추가해줘서 9페이지에서 게시글을 보고 목록으로 돌아가기 하면 9페이지로 감-->
+                    <!-- boardController에 get, modify에도 Cri를 추가해줘야 함, keyword는 자바스크립트로 구현 -->
+                    <a th:href="@{/noticeboard/modify(nobno=${noticeboard.nobno})}+ '&pageNum=__${cri.pageNum}__'" class="btn btn-secondary page">수정</a>
+                    <button onclick="deleteConfirm();" class="btn btn-danger">삭제</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- 댓글 달기 폼 -->
+            <div class="row mt-2">
+              <div class="col-md-10 me-auto ms-auto">
+                <div class="card card-body">
+                  <div class="row">
+                    <div class="col-3">
+                      <div class="input-group input-group-outline mb-3">
+                        <label class="form-label">글쓴이</label>
+                        <input type="text" class="form-control" id="writer" required />
+                      </div>
+                      <div class="text-center">
+                        <button id="reply-btn" class="btn bg-gradient-primary w-100 mb-0">댓글달기</button>
+                      </div>
+                    </div>
+                    <div class="col-9">
+                      <div class="input-group input-group-outline mb-0">
+                        <div class="input-group input-group-dynamic">
+                          <textarea id="content" class="form-control" rows="4" placeholder="댓글 내용을 적어주세요." required></textarea>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- 댓글 리스트 -->
+            <div class="row mt-2">
+              <div class="col-md-10 me-auto ms-auto">
+                <div class="card card-plain">
+                  <ul class="list-group" id="reply-list">
+                    <!-- ul 태그 안에 li태그를 넣어 댓글을 보여주기 -->
+                    <li>댓글을 만들어 넣기</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 오른쪽 숨김창 , JS 링크들 -->
+    <hidden th:replace="fragments/hidden :: 숨김창"></hidden>
+    <jslink th:replace="fragments/jslink :: 링크"></jslink>
+    <script th:src="@{/js/Fetch-API.js}"></script>
+    <script>
+      function deleteComfirm() {
+        if (confirm('정말 삭제하시겠습니까?')) {
+          location.href = '/noticeboard/delete?nobno=' + '[[${noticeboard.nobno}]]';
+        }
+      }
+
+      /* a태그들에 키워드를 추가해서 자바스크립트로 구현한다 */
+      const links = document.querySelectorAll('a.page');
+      links.forEach(function (link) {
+        // 각각의 a태그를 클릭했을 때 -> 함수실행
+        link.addEventListener('click', function (e) {
+          e.preventDefault(); // a태그의 이동 요청이 취소 됨
+          let keyword = '[[${cri.keyword}]]';
+          let type = '[[${cri.type}]]';
+          if (keyword.trim()) {
+            keyword = '&keyword=' + keyword;
+            type = '&type=' + type;
+          }
+          location.href = this.getAttribute('href') + keyword + type; // 클릭한 a태그의 주소에 + 키워드로 요청함
+        });
+      });
+
+      // Fetch-API 라이브러리 객체 생성
+      const http = new EasyHTTP();
+
+      /* 댓글 버튼 클릭 시 이벤트 */
+      const replyButton = document.getElementById('reply-btn');
+      replyButton.addEventListener('click', function () {
+        // console.log("클릭했음"); -> 테스트 성공
+        /* 댓글 입력*/
+        const data = {
+          reply_bno: '[[${noticeboard.nobno}]]',
+          content: document.getElementById('content').value,
+          writer: document.getElementById('writer').value,
+        };
+        http
+          .post('/reply', data) // post방식으로 reply주소로 data를 보낸다
+          .then((res) => console.log(res))
+          .catch((err) => console.log(err));
+
+        location.reload(); // 새로고침
+      });
+
+      /* 댓글 삭제 */
+      function deleteReply(el) {
+        if (confirm('정말 삭제하겠습니까?')) {
+          //console.log('삭제함');
+          http
+            .delete('/reply/' + el.dataset.id)
+            .then((res) => console.log(res))
+            .catch((err) => console.log(err));
+          // 태그객체 삭제
+          el.parentElement.parentElement.remove();
+        }
+      }
+
+      /* 댓글 수정 */
+      function updateReply(el) {
+        // el = this
+        // console.log(el); -> 테스트 성공
+        const 댓글내용 = el.parentElement.previousElementSibling.previousElementSibling;
+        const 댓글수정 = el.parentElement.previousElementSibling; // 수정 할 수 있는 창(textarea)
+        const 삭제버튼 = el.nextElementSibling;
+        if (el.textContent == '수정') {
+          // 버튼 이름이 '수정'이면
+          댓글내용.style.display = 'none';
+          댓글수정.style.display = 'block';
+          삭제버튼.style.visibility = 'hidden'; // 완전히 삭제하지 않고 모습만 숨긴다.
+          el.textContent = '수정완료';
+        } else {
+          // 수정되었기 때문에 서버로 update요청
+          const data = {
+            reply_no: el.dataset.id,
+            content: 댓글수정.value,
+          };
+
+          http
+            .put('/reply', data)
+            .then((res) => (댓글내용.textContent = res.content))
+            .catch((err) => console.log(err));
+
+          댓글내용.style.display = 'block';
+          댓글수정.style.display = 'none';
+          삭제버튼.style.visibility = 'visible'; // 완전히 삭제하지 않고 모습만 숨긴다.
+          el.textContent = '수정';
+        }
+      }
+
+      function replyListView(items) {
+        // res = items
+        // 댓글을 입력 할 태그(ul)
+        const replyList = document.getElementById('reply-list');
+        let lis = ''; // 댓글들 변수 선언
+        // console.log(items);
+        items.forEach(function (item) {
+          let writer = item.writer;
+          let content = item.content;
+          let updateTime = item.updated_at;
+          let id = item.reply_no;
+
+          let li = `<li class="list-group-item" style="position: relative">
+              <div>${writer}  ( ${updateTime} ) </div>
+              <p class="mb-0">${content}</p>
+              <textarea class="w-100" style="display:none">${content}</textarea>
+              <div style="position: absolute; top: 10px; right: 10px">
+                <button onclick="updateReply(this)" data-id="${id}" class="badge bg-gradient-info ms-auto">수정</button>
+                <button onclick="deleteReply(this)" data-id="${id}" class="badge bg-gradient-danger">삭제</button>
+              </div>
+            </li>`;
+
+          lis += li; // 각각의 댓글데이터가 들어간 li태그를 더해준다.
+        });
+        // 댓글리스트에 실제 댓글들을 넣어준다.
+        replyList.innerHTML = lis;
+      }
+
+      // HTML 문서가 준비되면 실행하기 이벤트
+      document.addEventListener('DOMContentLoaded', function () {
+        //  console.log("준비됨!");
+        /* 댓글 불러오기 */
+        http
+          .get('/reply/' + '[[${noticeboard.nobno}]]')
+          .then((res) => replyListView(res)) // res= controller에서 리턴 된 결과
+          .catch((err) => console.log(err));
+      });
+    </script>
+  </body>
+</html>
