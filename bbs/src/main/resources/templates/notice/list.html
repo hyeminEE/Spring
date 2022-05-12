@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="fragments/head :: 헤드"></head>
+  <body class="g-sidenav-show bg-gray-200">
+    <aside th:replace="fragments/aside :: 어사이드"></aside>
+    <!-- 메인 컨텐트 시작 -->
+    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+      <!-- 상단 네브바 -->
+      <nav th:replace="fragments/nav :: 네브"></nav>
+      <!-- 컨텐츠 시작 -->
+      <div class="container-fluid py-4">
+        <!-- 빈 컨텐츠 (여기서 시작)-->
+        <a th:href="@{/noticeboard/enroll}" class="btn btn-primary my-3">게시판 등록</a>
+        <div class="card">
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead>
+                <!-- 제목 부분-->
+                <tr>
+                  <th class="text-center text-secondary text-xxs font-weight-bolder opacity-7">NO</th>
+                  <th class="text-center text-secondary text-xxs font-weight-bolder opacity-7">TITLE</th>
+                  <th class="text-center text-secondary text-xxs font-weight-bolder opacity-7">글쓴이</th>
+                  <th class="text-center text-secondary text-xxs font-weight-bolder opacity-7">등록일</th>
+                  <th class="text-center text-secondary text-xxs font-weight-bolder opacity-7">수정일</th>
+                  <th class="text-center text-secondary text-xxs font-weight-bolder opacity-7">조회수</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="noticeboard : ${noticeboardList}">
+                  <td class="align-middle text-center">
+                    <span class="text-secondary text-sx" th:text="${noticeboard.nobno}"></span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <a class="title" th:href="@{/noticeboard/get(nobno=${noticeboard.nobno})} + '&pageNum=__${pmk.cri.pageNum}__'">
+                      <span class="text-secondary text-sx" th:text="${noticeboard.title}"></span>
+                    </a>
+                  </td>
+                  <td class="align-middle text-center">
+                    <span class="text-secondary text-sx" th:text="${noticeboard.writer}"></span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <span class="text-secondary text-sx" th:text="${#temporals.format(noticeboard.regdate , 'yyyy-MM-dd a hh:mm:ss')}"></span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <span class="text-secondary text-sx" th:text="${#temporals.format(noticeboard.updateDate , 'yyyy-MM-dd a hh:mm:ss')}"></span>
+                  </td>
+                  <td class="align-middle text-center">
+                    <span class="text-secondary text-sx" th:text="${noticeboard.hit}"></span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            </table>
+          <!-- 테이블 끝 -->
+          <!-- 검색 창-->
+          <div class="d-flex justify-content-center mt-2">
+            <!-- 검색 타입 부분-->
+            <div class="input-group input-group-static me-3" style="width: 8em">
+              <label for="searchType" class="ms-0">검색방법</label>
+              <select class="form-control" id="searchType">
+                <!-- <option value="" th:selected="${pmk.cri.type} == ''"></option> -->
+                <option value="T" th:selected="${pmk.cri.type} == 'T'">제목</option>
+                <option value="C" th:selected="${pmk.cri.type} == 'C'">내용</option>
+                <option value="W" th:selected="${pmk.cri.type} == 'W'">작성자</option>
+                <option value="TC" th:selected="${pmk.cri.type} == 'TC'">제목 + 내용</option>
+                <option value="TW" th:selected="${pmk.cri.type} == 'TW'">제목 + 작성자</option>
+                <option value="TCW" th:selected="${pmk.cri.type} == 'TCW'">제목 + 내용 + 작성자</option>
+              </select>
+            </div>
+            <!-- -->
+            <div class="w-md-25 w-sm-50 input-group input-group-outline is-filled">
+              <label class="form-label">search here...</label>
+              <input type="text" id="searchKeyword" th:value="${pmk.cri.keyword}" class="form-control" /> 
+              <!-- th:value = "${pmk.cri.keyword}"=> 검색 하고 결과값이 남아있게 하는 것 -->
+              <button id="searchButton" class="btn btn-primary mb-0">검색</button>
+            </div>
+          </div>
+
+          <!-- 페이지네이션 시작 -->
+          <nav aria-label="Page navigation" th:if="${pmk.endPage > 0}">
+            <ul class="pagination pagenation-primary justify-content-center mt-5">
+                                                      <!-- 페이지네이션 가운데 정렬-->
+              <li class="page-item" th:if="${pmk.prev}">
+                <a class="page-link" th:href="@{/board/list} + '?pageNum=__${pmk.startPage-1}__'" aria-label="이전">
+                  <span class="material-icons"> keyboard_arrow_left </span>
+                  <span class="sr-only">이전 화살표</span>
+                </a>
+              </li>
+                                                                                                                                            <!-- ↱pmk.endPage = 현재 화면에 표시 할 끝 페이지-->
+              <li class="page-item" th:classappend="${pmk.cri.pageNum == number} ? 'active': '' " 
+                th:each="number : ${#numbers.sequence(pmk.startPage, pmk.endPage)}"> 
+                <a class="page-link" th:href="@{/board/list} + '?pageNum=__${number}__'" th:text="${number}"></a>
+                                                                    <!--'' 문자열 안에 또 변수가 들어갈때는 __를 써준다-->
+              </li>
+
+              <li class="page-item" th:if="${pmk.next}">
+                <a class="page-link" th:href="@{/board/list} + '?pageNum=__${pmk.endPage+1}__'" aria-label="다음">
+                  <span class="material-icons"> keyboard_arrow_right </span>
+                  <span class="sr-only">다음 화살표</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 오른쪽 숨김창 , JS 링크들 -->
+    <hidden th:replace="fragments/hidden :: 숨김창"></hidden>
+    <jslink th:replace="fragments/jslink :: 링크"></jslink>
+    <script>
+      document.getElementById("pageName").textContent = "게시판 목록";
+
+      const searchKeyword = document.getElementById('searchKeyword'); // 키워드 입력창의 값(내용)
+      const searchButton = document.getElementById('searchButton'); // 검색 버튼
+      const searchType = document.getElementById('searchType'); // 검색 방법
+      
+      /* 검색 버튼을 눌렀을때 (이벤트 'click') 키워드를 url에 추가해서 보내면 됨*/
+      searchButton.addEventListener('click', function(){
+        let keyword = ''; // 키워드 변수 선언
+        let type = '';  // 검색 방법
+        let 공백제거키워드 = searchKeyword.value.trim(); // trim()=> 값 중에 공백을 삭제
+        if(공백제거키워드) {
+          keyword = '&keyword=' + 공백제거키워드;  //키워드가 있을 경우에 '&keyword=키워드'
+          type = '&type=' + searchType.value;
+        }
+        location.href = '/board/list?pageNum=1' + keyword + type; // 처음 키워드로 검색 시 무조건 1페이지를 보여준다.
+      }); //click이벤트일때 함수를 실행
+
+      /* 페이지네이션의 a태그들을 전부 자바스크립트 요청으로 바꾸기(키워드 추가) */
+      const pageLinks = document.querySelectorAll('ul.pagination .page-link');
+      pageLinks.forEach(function(link){
+        // 각각의 a태그를 클릭했을 때 -> 함수실행
+        link.addEventListener('click',pageControl);
+      });
+
+      function pageControl(e){
+        e.preventDefault(); // a태그의 이동 요청이 취소 됨
+          let keyword = ''; // 키워드 변수 선언
+          let type = '';
+          let 공백제거키워드 = searchKeyword.value.trim(); // trim()=> 값 중에 공백을 삭제
+          if(공백제거키워드) {
+          keyword = '&keyword=' + 공백제거키워드;  //키워드가 있을 경우에 '&keyword=키워드'
+          type = '&type=' + searchType.value;
+        }
+          location.href = this.getAttribute('href') + keyword + type; // 클릭한 a태그의 주소에 + 키워드로 요청함
+      }
+
+      /* 제목 a태그들을 선택해서 a태그 이동을 취소하고 키워드 추가해서 요청 -> 게시물을 들어갔다가 나오면 페이지네이션이 초기화 안되게 하는 코딩*/
+      const getLinks = document.querySelectorAll('table .title'); 
+      getLinks.forEach(function(link){
+        // 각각의 a태그를 클릭했을 때 -> 함수실행
+        link.addEventListener('click', pageControl);
+      });
+    </script> 
+  </body>
+</html>

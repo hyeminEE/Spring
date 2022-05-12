@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 자바소스의 BoardMapper의 경로 적용 -->
+<mapper namespace="com.myapp.bbs.dao.SvrBoardMapper">
+
+    <!-- 검색 조건문 where절에 각각의 type이 있으면 추가해준다. -->
+    <sql id="criteria">
+        <trim prefix="where (" suffix=")" prefixOverrides="OR">
+            <foreach collection="typeArr" item="type">
+                <trim prefix="OR">
+                    <choose>
+                        <when test="type == 'T'.toString()">
+                            title like concat('%',#{keyword},'%') 
+                        </when>
+                        <when test="type == 'C'.toString()">
+                            content like concat('%',#{keyword},'%') 
+                        </when>
+                        <when test="type == 'W'.toString()">
+                            writer like concat('%',#{keyword},'%' )
+                        </when>
+                    </choose>
+                </trim>
+            </foreach>
+        </trim>  
+    </sql>
+
+
+
+
+	<!-- 게시판 등록 -->
+	<select id="enroll" resultType="SvrBoardVO">
+	
+		insert into svrboard(title, content, writer, hit) 
+		values (#{title}, #{content}, #{writer}, 0)
+		
+	</select>
+	
+	<!-- 게시판 목록 -->
+	<select id="getList" resultType="SvrBoardVO">
+	
+		select * from svrboard
+	
+	</select>
+	
+    <!-- 게시물 목록(페이징) : skip, amount는 Criteria 객체에서 입력됨 -->
+    <select id="getListPaging" resultType="SvrBoardVO">
+    
+        select * from (
+                select svbno, title, writer, regdate, updatedate, hit  
+                from svrboard 
+                
+                <if test="keyword != null">
+                	<include refid="criteria"></include>              
+                </if>
+                
+                order by svbno desc
+                )  as T3
+        limit #{skip}, #{amount}
+    
+    </select>	
+    
+    <!-- 게시물 총 개숫 -->
+    <select id="getTotal" resultType="int">
+    
+        select count(*) from svrboard
+        
+        <if test="keyword != null">
+        	<include refid="criteria"></include>                
+        </if>              
+    
+    </select>
+	
+	
+	<!-- 게시판 조회 -->
+	<select id="getPage" resultType="SvrBoardVO">
+	
+		select * from svrboard where svbno = #{svbno}
+	
+	</select>
+	
+	<!-- 조회수 올리기 -->
+	<update id="updateViewCount">
+		update svrboard set hit = hit + 1 where svbno = #{svbno}
+	</update>
+	
+	<!-- 게시판 수정 -->
+    <update id="modify">
+    
+        update svrboard set title = #{title}, content = #{content}, updatedate = now() 
+        where svbno = #{svbno}
+        
+    </update>
+    
+    <!-- 게시판 삭제 -->
+    <delete id="delete">
+    
+        delete from svrboard where svbno = #{svbno}
+    
+    </delete>
+    
+ 
+    <!-- 자유게시글 추천수 
+    <update id="updateLike" parameterType="int">
+    	update svrboard set likehit = likehit + 1
+    	where svbno = #{svbno}
+    </update> -->
+    
+    <!-- 게시글 추천 취소 
+    <update id="updateLikeCancel" parameterType="int">
+    	update svrboard set likehit = likehit - 1
+    	where svbno = #{svbno}
+    </update> -->
+    
+    <!-- 추천 시 freelike테이블에 insert 
+    <insert id="insertLike">
+    	insert into freelike(likeno , svbno, id)
+    	values((SELECT NVL(MAX(likeno), 0) + 1 FROM freelike), #{bno}, #{id})
+    
+    </insert> -->
+    
+    <!--  추천 취소 시 delete 
+    <delete id="deleteLike">
+    	delete from freelike 
+    	where bno = #{bno} and id = #{id}	
+    </delete> -->
+    
+    <!-- 게시글 추천 시 check를 1로 만들어 중복 방지 
+    <update id="updateLikeCheck">
+    	update freelike set likecheck = 1
+    	where bno = #{bno} and id = #{id} 
+    </update> -->
+    
+    <!--  게시글 추천 취소 시 다시 0으로 만들기 
+    <update id="updateLikeCheckCancel">
+    	update freelike set likecheck = 0 
+    	where bno = #{bno} and id = #{id}
+    </update> -->
+    
+    <!--  게시글 추천 중복방지 select문 
+    <select id="likeCheck" resultType="int">
+    	select count(*) from freelike where bno = #{bno} and id = #{id}
+    </select>  -->
+    
+
+	
+	
+</mapper>
